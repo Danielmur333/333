@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Система обращений</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 24px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            width: 90%;
+            margin: 2rem auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #333;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5a67d8;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .error {
+            color: #e53e3e;
+            font-size: 14px;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        /* Стили для дашборда */
+        .dashboard-header {
+            background: white;
+            border-radius: 20px;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .role-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+
+        .role-badge.admin {
+            background: #fbbf24;
+            color: #78350f;
+        }
+
+        .role-badge.user {
+            background: #86efac;
+            color: #14532d;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .center-content {
+            text-align: center;
+        }
+
+        .ticket-btn {
+            padding: 16px 32px;
+            font-size: 18px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .ticket-btn:hover {
+            background: #5a67d8;
+            transform: scale(1.05);
+        }
+
+        .tickets-list {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .ticket-item {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .ticket-date {
+            color: #718096;
+            font-size: 12px;
+            margin-top: 0.5rem;
+        }
+
+        .sort-btn {
+            margin-bottom: 1rem;
+            padding: 8px 16px;
+            background: #4a5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 2rem;
+            border-radius: 24px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            margin-top: 0.5rem;
+            resize: vertical;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+
+    <script>
+        // Данные по умолчанию
+        const DEFAULT_USERS = [
+            { login: 'user', password: 'user123', role: 'user', name: 'Иван Петров', avatar: 'ИП' },
+            { login: 'admin', password: 'admin123', role: 'admin', name: 'Алексей Админов', avatar: 'АА' }
+        ];
+
+        // Инициализация localStorage
+        if (!localStorage.getItem('users')) {
+            localStorage.setItem('users', JSON.stringify(DEFAULT_USERS));
+        }
+
+        if (!localStorage.getItem('tickets')) {
+            localStorage.setItem('tickets', JSON.stringify([]));
+        }
+
+        // Хелперы
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('users'));
+        }
+
+        function getTickets() {
+            return JSON.parse(localStorage.getItem('tickets'));
+        }
+
+        function saveTickets(tickets) {
+            localStorage.setItem('tickets', JSON.stringify(tickets));
+        }
+
+        function addTicket(text, username) {
+            const tickets = getTickets();
+            tickets.push({
+                id: Date.now(),
+                text: text,
+                username: username,
+                date: new Date().toISOString(),
+                createdAt: Date.now()
+            });
+            saveTickets(tickets);
+        }
+
+        // Страница входа (логин + пароль)
+        function LoginPage(onSuccess) {
+            let errorMsg = '';
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const login = document.getElementById('login').value.trim();
+                const password = document.getElementById('password').value;
+
+                const users = getUsers();
+                const user = users.find(u => u.login === login && u.password === password);
+
+                if (user) {
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    onSuccess(user);
+                } else {
+                    errorMsg = 'Неверный логин или пароль';
+                    render();
+                }
+            };
+
+            const render = () => {
+                const container = document.getElementById('app');
+                container.innerHTML = `
+                    <div class="container">
+                        <h1>🔐 Вход в систему</h1>
+                        <form id="loginForm">
+                            <div class="input-group">
+                                <label>Логин</label>
+                                <input type="text" id="login" placeholder="user / admin" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Пароль</label>
+                                <input type="password" id="password" placeholder="user123 / admin123" required>
+                            </div>
+                            ${errorMsg ? `<div class="error">${errorMsg}</div>` : ''}
+                            <button type="submit" class="btn btn-primary">Войти</button>
+                        </form>
+                        <p style="margin-top: 1rem; font-size: 12px; color: #718096; text-align: center;">
+                            Тестовые данные: user/user123 или admin/admin123
+                        </p>
+                    </div>
+                `;
+                document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            };
+
+            render();
+        }
+
+        // Страница с кнопкой "Вход"
+        function FirstPage() {
+            const container = document.getElementById('app');
+            container.innerHTML = `
+                <div class="container">
+                    <h1>🚀 Добро пожаловать</h1>
+                    <button id="enterBtn" class="btn btn-primary">Вход</button>
+                </div>
+            `;
+            document.getElementById('enterBtn').addEventListener('click', () => {
+                // Переход на страницу логина
+                LoginPage((user) => {
+                    if (user.role === 'admin') {
+                        AdminDashboard(user);
+                    } else {
+                        UserDashboard(user);
+                    }
+                });
+            });
+        }
+
+        // Панель обычного пользователя
+        function UserDashboard(user) {
+            const container = document.getElementById('app');
+            
+            const showTicketModal = () => {
+                const modalDiv = document.createElement('div');
+                modalDiv.className = 'modal';
+                modalDiv.innerHTML = `
+                    <div class="modal-content">
+                        <h3>📝 Новое обращение</h3>
+                        <textarea id="ticketText" rows="4" placeholder="Опишите вашу проблему..."></textarea>
+                        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+                            <button id="submitTicket" class="btn btn-primary" style="flex:1">Отправить</button>
+                            <button id="closeModal" style="flex:1; background:#ccc;">Отмена</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalDiv);
+                
+                document.getElementById('submitTicket').onclick = () => {
+                    const text = document.getElementById('ticketText').value.trim();
+                    if (text) {
+                        addTicket(text, user.name);
+                        alert('Обращение отправлено!');
+                        modalDiv.remove();
+                    } else {
+                        alert('Введите текст обращения');
+                    }
+                };
+                document.getElementById('closeModal').onclick = () => modalDiv.remove();
+            };
+
+            const render = () => {
+                container.innerHTML = `
+                    <div class="dashboard-container">
+                        <div class="dashboard-header">
+                            <div class="user-info">
+                                <div class="avatar">${user.avatar}</div>
+                                <div>
+                                    <strong>${user.name}</strong>
+                                    <div class="role-badge user">👤 Пользователь</div>
+                                </div>
+                            </div>
+                            <button class="logout-btn" id="logoutBtn">Выйти</button>
+                        </div>
+                        <div class="center-content">
+                            <button class="ticket-btn" id="openTicketBtn">📨 Создать обращение</button>
+                        </div>
+                        <div style="margin-top: 2rem; padding: 1rem; background: #f7fafc; border-radius: 16px;">
+                            <p style="text-align: center; color: #4a5568;">✨ Вы вошли как обычный пользователь</p>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('openTicketBtn').addEventListener('click', showTicketModal);
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    sessionStorage.removeItem('currentUser');
+                    FirstPage();
+                });
+            };
+            render();
+        }
+
+        // Панель администратора
+        function AdminDashboard(user) {
+            let sortAsc = false; // false = новые сверху, true = старые сверху
+            
+            const renderTickets = () => {
+                let tickets = getTickets();
+                // Сортировка по дате
+                if (sortAsc) {
+                    tickets.sort((a, b) => a.createdAt - b.createdAt);
+                } else {
+                    tickets.sort((a, b) => b.createdAt - a.createdAt);
+                }
+                
+                const ticketsContainer = document.getElementById('ticketsList');
+                if (!ticketsContainer) return;
+                
+                if (tickets.length === 0) {
+                    ticketsContainer.innerHTML = '<p style="text-align:center; color:#718096;">Пока нет обращений</p>';
+                    return;
+                }
+                
+                ticketsContainer.innerHTML = tickets.map(ticket => `
+                    <div class="ticket-item">
+                        <strong>👤 ${ticket.username}</strong>
+                        <p>${ticket.text}</p>
+                        <div class="ticket-date">📅 ${new Date(ticket.date).toLocaleString('ru-RU')}</div>
+                    </div>
+                `).join('');
+            };
+            
+            const container = document.getElementById('app');
+            const render = () => {
+                container.innerHTML = `
+                    <div class="dashboard-container">
+                        <div class="dashboard-header">
+                            <div class="user-info">
+                                <div class="avatar">${user.avatar}</div>
+                                <div>
+                                    <strong>${user.name}</strong>
+                                    <div class="role-badge admin">👑 Администратор</div>
+                                </div>
+                            </div>
+                            <button class="logout-btn" id="logoutBtn">Выйти</button>
+                        </div>
+                        
+                        <div style="background: white; border-radius: 20px; padding: 1.5rem;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h2>📋 Обращения пользователей</h2>
+                                <button id="sortBtn" class="sort-btn">🔄 Сортировка по дате (новые сверху)</button>
+                            </div>
+                            <div id="ticketsList"></div>
+                        </div>
+                    </div>
+                `;
+                
+                renderTickets();
+                
+                document.getElementById('sortBtn').addEventListener('click', () => {
+                    sortAsc = !sortAsc;
+                    document.getElementById('sortBtn').innerText = sortAsc 
+                        ? '🔄 Сортировка по дате (старые сверху)' 
+                        : '🔄 Сортировка по дате (новые сверху)';
+                    renderTickets();
+                });
+                
+                document.getElementById('logoutBtn').addEventListener('click', () => {
+                    sessionStorage.removeItem('currentUser');
+                    FirstPage();
+                });
+            };
+            render();
+        }
+
+        // Проверяем, есть ли уже активная сессия
+        const savedUser = sessionStorage.getItem('currentUser');
+        if (savedUser) {
+            const user = JSON.parse(savedUser);
+            if (user.role === 'admin') {
+                AdminDashboard(user);
+            } else {
+                UserDashboard(user);
+            }
+        } else {
+            FirstPage();
+        }
+    </script>
+</body>
+</html>
