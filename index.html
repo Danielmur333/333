@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Система обращений</title>
+    <title>Система обращений - База данных</title>
     <style>
         * {
             margin: 0;
@@ -63,6 +63,15 @@
             box-shadow: 0 5px 15px rgba(102,126,234,0.4);
         }
 
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
         .input-group {
             margin-bottom: 1.5rem;
         }
@@ -74,7 +83,7 @@
             font-weight: 500;
         }
 
-        input {
+        input, textarea, select {
             width: 100%;
             padding: 12px;
             border: 2px solid #e2e8f0;
@@ -83,13 +92,20 @@
             transition: border-color 0.2s;
         }
 
-        input:focus {
+        input:focus, textarea:focus, select:focus {
             outline: none;
             border-color: #667eea;
         }
 
         .error {
             color: #e53e3e;
+            font-size: 14px;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .success {
+            color: #10b981;
             font-size: 14px;
             margin-top: 0.5rem;
             text-align: center;
@@ -185,6 +201,28 @@
             border-bottom: 1px solid #e2e8f0;
             padding: 1rem;
             margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .ticket-content {
+            flex: 1;
+        }
+
+        .ticket-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .delete-ticket {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 4px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
         }
 
         .ticket-date {
@@ -201,6 +239,15 @@
             border: none;
             border-radius: 8px;
             cursor: pointer;
+        }
+
+        .stats {
+            background: #f7fafc;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
         }
 
         .modal {
@@ -225,12 +272,6 @@
         }
 
         textarea {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 16px;
-            margin-top: 0.5rem;
             resize: vertical;
         }
 
@@ -243,106 +284,155 @@
     <div id="app"></div>
 
     <script>
-        // Данные по умолчанию
-        const DEFAULT_USERS = [
-            { login: 'user', password: 'user123', role: 'user', name: 'Иван Петров', avatar: 'ИП' },
-            { login: 'admin', password: 'admin123', role: 'admin', name: 'Алексей Админов', avatar: 'АА' }
-        ];
+        // ========== БАЗА ДАННЫХ (Database Module) ==========
+        // Эмуляция работы с базой данных через localStorage
+        
+        class Database {
+            constructor() {
+                this.init();
+            }
 
-        // Инициализация localStorage
-        if (!localStorage.getItem('users')) {
-            localStorage.setItem('users', JSON.stringify(DEFAULT_USERS));
-        }
-
-        if (!localStorage.getItem('tickets')) {
-            localStorage.setItem('tickets', JSON.stringify([]));
-        }
-
-        // Хелперы
-        function getUsers() {
-            return JSON.parse(localStorage.getItem('users'));
-        }
-
-        function getTickets() {
-            return JSON.parse(localStorage.getItem('tickets'));
-        }
-
-        function saveTickets(tickets) {
-            localStorage.setItem('tickets', JSON.stringify(tickets));
-        }
-
-        function addTicket(text, username) {
-            const tickets = getTickets();
-            tickets.push({
-                id: Date.now(),
-                text: text,
-                username: username,
-                date: new Date().toISOString(),
-                createdAt: Date.now()
-            });
-            saveTickets(tickets);
-        }
-
-        // Страница входа (логин + пароль)
-        function LoginPage(onSuccess) {
-            let errorMsg = '';
-
-            const handleLogin = (e) => {
-                e.preventDefault();
-                const login = document.getElementById('login').value.trim();
-                const password = document.getElementById('password').value;
-
-                const users = getUsers();
-                const user = users.find(u => u.login === login && u.password === password);
-
-                if (user) {
-                    sessionStorage.setItem('currentUser', JSON.stringify(user));
-                    onSuccess(user);
-                } else {
-                    errorMsg = 'Неверный логин или пароль';
-                    render();
+            // Инициализация БД с начальными данными
+            init() {
+                if (!localStorage.getItem('db_users')) {
+                    const initialUsers = [
+                        { id: 1, login: 'user', password: 'user123', role: 'user', name: 'Иван Петров', avatar: 'ИП', email: 'ivan@example.com', createdAt: new Date().toISOString() },
+                        { id: 2, login: 'admin', password: 'admin123', role: 'admin', name: 'Алексей Админов', avatar: 'АА', email: 'admin@example.com', createdAt: new Date().toISOString() }
+                    ];
+                    localStorage.setItem('db_users', JSON.stringify(initialUsers));
                 }
-            };
 
-            const render = () => {
-                const container = document.getElementById('app');
-                container.innerHTML = `
-                    <div class="container">
-                        <h1>🔐 Вход в систему</h1>
-                        <form id="loginForm">
-                            <div class="input-group">
-                                <label>Логин</label>
-                                <input type="text" id="login" placeholder="user / admin" required>
-                            </div>
-                            <div class="input-group">
-                                <label>Пароль</label>
-                                <input type="password" id="password" placeholder="user123 / admin123" required>
-                            </div>
-                            ${errorMsg ? `<div class="error">${errorMsg}</div>` : ''}
-                            <button type="submit" class="btn btn-primary">Войти</button>
-                        </form>
-                        <p style="margin-top: 1rem; font-size: 12px; color: #718096; text-align: center;">
-                            Тестовые данные: user/user123 или admin/admin123
-                        </p>
-                    </div>
-                `;
-                document.getElementById('loginForm').addEventListener('submit', handleLogin);
-            };
+                if (!localStorage.getItem('db_tickets')) {
+                    const initialTickets = [
+                        { id: 1001, text: 'Не работает кнопка на главной странице', username: 'Иван Петров', userId: 1, date: new Date().toISOString(), createdAt: Date.now() - 86400000, status: 'open' },
+                        { id: 1002, text: 'Как изменить пароль?', username: 'Иван Петров', userId: 1, date: new Date(Date.now() - 43200000).toISOString(), createdAt: Date.now() - 43200000, status: 'open' }
+                    ];
+                    localStorage.setItem('db_tickets', JSON.stringify(initialTickets));
+                }
 
-            render();
+                if (!localStorage.getItem('db_logs')) {
+                    localStorage.setItem('db_logs', JSON.stringify([]));
+                }
+            }
+
+            // Таблица users
+            getUsers() {
+                return JSON.parse(localStorage.getItem('db_users'));
+            }
+
+            getUserByLogin(login) {
+                const users = this.getUsers();
+                return users.find(u => u.login === login);
+            }
+
+            getUserById(id) {
+                const users = this.getUsers();
+                return users.find(u => u.id === id);
+            }
+
+            // Таблица tickets
+            getTickets() {
+                return JSON.parse(localStorage.getItem('db_tickets'));
+            }
+
+            getTicketsByUserId(userId) {
+                const tickets = this.getTickets();
+                return tickets.filter(t => t.userId === userId);
+            }
+
+            getAllTicketsWithUser() {
+                const tickets = this.getTickets();
+                const users = this.getUsers();
+                return tickets.map(ticket => ({
+                    ...ticket,
+                    userInfo: users.find(u => u.id === ticket.userId)
+                }));
+            }
+
+            addTicket(text, userId, username) {
+                const tickets = this.getTickets();
+                const newTicket = {
+                    id: Date.now(),
+                    text: text,
+                    username: username,
+                    userId: userId,
+                    date: new Date().toISOString(),
+                    createdAt: Date.now(),
+                    status: 'open'
+                };
+                tickets.push(newTicket);
+                localStorage.setItem('db_tickets', JSON.stringify(tickets));
+                this.addLog('CREATE_TICKET', userId, `Создано обращение: ${text.substring(0, 50)}`);
+                return newTicket;
+            }
+
+            deleteTicket(ticketId, userId) {
+                let tickets = this.getTickets();
+                const deletedTicket = tickets.find(t => t.id === ticketId);
+                tickets = tickets.filter(t => t.id !== ticketId);
+                localStorage.setItem('db_tickets', JSON.stringify(tickets));
+                this.addLog('DELETE_TICKET', userId, `Удалено обращение #${ticketId}`);
+                return deletedTicket;
+            }
+
+            updateTicketStatus(ticketId, status) {
+                let tickets = this.getTickets();
+                const ticket = tickets.find(t => t.id === ticketId);
+                if (ticket) {
+                    ticket.status = status;
+                    localStorage.setItem('db_tickets', JSON.stringify(tickets));
+                }
+            }
+
+            // Таблица логов (для демонстрации работы БД)
+            getLogs() {
+                return JSON.parse(localStorage.getItem('db_logs'));
+            }
+
+            addLog(action, userId, details) {
+                const logs = this.getLogs();
+                logs.push({
+                    id: Date.now(),
+                    action: action,
+                    userId: userId,
+                    details: details,
+                    timestamp: new Date().toISOString()
+                });
+                localStorage.setItem('db_logs', JSON.stringify(logs));
+            }
+
+            // Статистика БД
+            getStats() {
+                return {
+                    usersCount: this.getUsers().length,
+                    ticketsCount: this.getTickets().length,
+                    logsCount: this.getLogs().length,
+                    lastTicket: this.getTickets().sort((a,b) => b.createdAt - a.createdAt)[0]
+                };
+            }
         }
 
-        // Страница с кнопкой "Вход"
+        // Создаём экземпляр базы данных
+        const db = new Database();
+
+        // ========== КОМПОНЕНТЫ ПРИЛОЖЕНИЯ ==========
+        
+        // Страница входа (первая - просто кнопка)
         function FirstPage() {
             const container = document.getElementById('app');
             container.innerHTML = `
                 <div class="container">
-                    <h1>🚀 Добро пожаловать</h1>
-                    <button id="enterBtn" class="btn btn-primary">Вход</button>
+                    <h1>📱 Система обращений</h1>
+                    <p style="text-align: center; margin-bottom: 2rem; color: #666;">База данных пользователей и обращений</p>
+                    <button id="enterBtn" class="btn btn-primary">🔐 Вход в систему</button>
+                    <div class="stats" style="margin-top: 1.5rem;">
+                        <span>📊 Статистика БД:</span>
+                        <span>👥 ${db.getStats().usersCount} пользователей</span>
+                        <span>📝 ${db.getStats().ticketsCount} обращений</span>
+                    </div>
                 </div>
             `;
             document.getElementById('enterBtn').addEventListener('click', () => {
-                // Переход на страницу логина
                 LoginPage((user) => {
                     if (user.role === 'admin') {
                         AdminDashboard(user);
@@ -351,6 +441,56 @@
                     }
                 });
             });
+        }
+
+        // Страница авторизации (логин + пароль)
+        function LoginPage(onSuccess) {
+            let errorMsg = '';
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                const login = document.getElementById('login').value.trim();
+                const password = document.getElementById('password').value;
+
+                const user = db.getUserByLogin(login);
+                
+                if (user && user.password === password) {
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+                    db.addLog('LOGIN', user.id, `Пользователь ${user.login} вошёл в систему`);
+                    onSuccess(user);
+                } else {
+                    errorMsg = '❌ Неверный логин или пароль';
+                    render();
+                }
+            };
+
+            const render = () => {
+                const container = document.getElementById('app');
+                container.innerHTML = `
+                    <div class="container">
+                        <h1>🔐 Авторизация</h1>
+                        <form id="loginForm">
+                            <div class="input-group">
+                                <label>👤 Логин</label>
+                                <input type="text" id="login" placeholder="user / admin" required>
+                            </div>
+                            <div class="input-group">
+                                <label>🔑 Пароль</label>
+                                <input type="password" id="password" placeholder="user123 / admin123" required>
+                            </div>
+                            ${errorMsg ? `<div class="error">${errorMsg}</div>` : ''}
+                            <button type="submit" class="btn btn-primary">Войти</button>
+                        </form>
+                        <p style="margin-top: 1rem; font-size: 12px; color: #718096; text-align: center;">
+                            📌 Тестовые данные из БД:<br>
+                            user / user123 | admin / admin123
+                        </p>
+                    </div>
+                `;
+                document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            };
+
+            render();
         }
 
         // Панель обычного пользователя
@@ -375,14 +515,35 @@
                 document.getElementById('submitTicket').onclick = () => {
                     const text = document.getElementById('ticketText').value.trim();
                     if (text) {
-                        addTicket(text, user.name);
-                        alert('Обращение отправлено!');
+                        db.addTicket(text, user.id, user.name);
+                        alert('✅ Обращение отправлено в БД!');
                         modalDiv.remove();
+                        render();
                     } else {
                         alert('Введите текст обращения');
                     }
                 };
                 document.getElementById('closeModal').onclick = () => modalDiv.remove();
+            };
+
+            const renderMyTickets = () => {
+                const myTickets = db.getTicketsByUserId(user.id);
+                const container = document.getElementById('myTickets');
+                if (!container) return;
+                
+                if (myTickets.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#718096;">У вас пока нет обращений</p>';
+                    return;
+                }
+                
+                container.innerHTML = myTickets.map(ticket => `
+                    <div class="ticket-item">
+                        <div class="ticket-content">
+                            <p>${ticket.text}</p>
+                            <div class="ticket-date">📅 ${new Date(ticket.date).toLocaleString('ru-RU')}</div>
+                        </div>
+                    </div>
+                `).join('');
             };
 
             const render = () => {
@@ -394,34 +555,48 @@
                                 <div>
                                     <strong>${user.name}</strong>
                                     <div class="role-badge user">👤 Пользователь</div>
+                                    <div style="font-size: 12px; color: #666;">ID в БД: ${user.id}</div>
                                 </div>
                             </div>
-                            <button class="logout-btn" id="logoutBtn">Выйти</button>
+                            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
                         </div>
                         <div class="center-content">
                             <button class="ticket-btn" id="openTicketBtn">📨 Создать обращение</button>
                         </div>
-                        <div style="margin-top: 2rem; padding: 1rem; background: #f7fafc; border-radius: 16px;">
-                            <p style="text-align: center; color: #4a5568;">✨ Вы вошли как обычный пользователь</p>
+                        <div class="tickets-list">
+                            <h3>📋 Мои обращения (из БД)</h3>
+                            <div id="myTickets"></div>
+                        </div>
+                        <div style="margin-top: 1rem; padding: 0.75rem; background: #e2e8f0; border-radius: 12px; font-size: 12px; text-align: center;">
+                            🗄️ Данные хранятся в localStorage (эмуляция БД)
                         </div>
                     </div>
                 `;
                 document.getElementById('openTicketBtn').addEventListener('click', showTicketModal);
                 document.getElementById('logoutBtn').addEventListener('click', () => {
+                    db.addLog('LOGOUT', user.id, `Пользователь ${user.login} вышел`);
                     sessionStorage.removeItem('currentUser');
                     FirstPage();
                 });
+                renderMyTickets();
             };
             render();
         }
 
         // Панель администратора
         function AdminDashboard(user) {
-            let sortAsc = false; // false = новые сверху, true = старые сверху
+            let sortAsc = false;
             
+            const deleteTicket = (ticketId) => {
+                if (confirm('Удалить обращение из БД?')) {
+                    db.deleteTicket(ticketId, user.id);
+                    renderTickets();
+                }
+            };
+
             const renderTickets = () => {
-                let tickets = getTickets();
-                // Сортировка по дате
+                let tickets = db.getAllTicketsWithUser();
+                
                 if (sortAsc) {
                     tickets.sort((a, b) => a.createdAt - b.createdAt);
                 } else {
@@ -432,17 +607,42 @@
                 if (!ticketsContainer) return;
                 
                 if (tickets.length === 0) {
-                    ticketsContainer.innerHTML = '<p style="text-align:center; color:#718096;">Пока нет обращений</p>';
+                    ticketsContainer.innerHTML = '<p style="text-align:center; color:#718096;">В БД пока нет обращений</p>';
                     return;
                 }
                 
                 ticketsContainer.innerHTML = tickets.map(ticket => `
                     <div class="ticket-item">
-                        <strong>👤 ${ticket.username}</strong>
-                        <p>${ticket.text}</p>
-                        <div class="ticket-date">📅 ${new Date(ticket.date).toLocaleString('ru-RU')}</div>
+                        <div class="ticket-content">
+                            <strong>👤 ${ticket.username}</strong> (ID: ${ticket.userId})
+                            <p>${ticket.text}</p>
+                            <div class="ticket-date">📅 ${new Date(ticket.date).toLocaleString('ru-RU')}</div>
+                        </div>
+                        <div class="ticket-actions">
+                            <button class="delete-ticket" data-id="${ticket.id}">🗑️ Удалить</button>
+                        </div>
                     </div>
                 `).join('');
+                
+                // Добавляем обработчики удаления
+                document.querySelectorAll('.delete-ticket').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const id = parseInt(btn.dataset.id);
+                        deleteTicket(id);
+                    });
+                });
+            };
+            
+            const renderStats = () => {
+                const stats = db.getStats();
+                const statsContainer = document.getElementById('dbStats');
+                if (statsContainer) {
+                    statsContainer.innerHTML = `
+                        <span>👥 Пользователей: ${stats.usersCount}</span>
+                        <span>📝 Обращений: ${stats.ticketsCount}</span>
+                        <span>📜 Логов: ${stats.logsCount}</span>
+                    `;
+                }
             };
             
             const container = document.getElementById('app');
@@ -455,15 +655,18 @@
                                 <div>
                                     <strong>${user.name}</strong>
                                     <div class="role-badge admin">👑 Администратор</div>
+                                    <div style="font-size: 12px; color: #666;">ID в БД: ${user.id}</div>
                                 </div>
                             </div>
-                            <button class="logout-btn" id="logoutBtn">Выйти</button>
+                            <button class="logout-btn" id="logoutBtn">🚪 Выйти</button>
                         </div>
+                        
+                        <div class="stats" id="dbStats"></div>
                         
                         <div style="background: white; border-radius: 20px; padding: 1.5rem;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                                <h2>📋 Обращения пользователей</h2>
-                                <button id="sortBtn" class="sort-btn">🔄 Сортировка по дате (новые сверху)</button>
+                                <h2>📋 Все обращения (из БД)</h2>
+                                <button id="sortBtn" class="sort-btn">🔄 Сортировка по дате (новые ↓)</button>
                             </div>
                             <div id="ticketsList"></div>
                         </div>
@@ -471,16 +674,18 @@
                 `;
                 
                 renderTickets();
+                renderStats();
                 
                 document.getElementById('sortBtn').addEventListener('click', () => {
                     sortAsc = !sortAsc;
                     document.getElementById('sortBtn').innerText = sortAsc 
-                        ? '🔄 Сортировка по дате (старые сверху)' 
-                        : '🔄 Сортировка по дате (новые сверху)';
+                        ? '🔄 Сортировка по дате (старые ↑)' 
+                        : '🔄 Сортировка по дате (новые ↓)';
                     renderTickets();
                 });
                 
                 document.getElementById('logoutBtn').addEventListener('click', () => {
+                    db.addLog('LOGOUT', user.id, `Админ ${user.login} вышел`);
                     sessionStorage.removeItem('currentUser');
                     FirstPage();
                 });
@@ -488,7 +693,7 @@
             render();
         }
 
-        // Проверяем, есть ли уже активная сессия
+        // ========== ЗАПУСК ПРИЛОЖЕНИЯ ==========
         const savedUser = sessionStorage.getItem('currentUser');
         if (savedUser) {
             const user = JSON.parse(savedUser);
